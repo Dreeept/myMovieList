@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import MovieCard from './MovieCard';
-import MovieForm from './MovieForm';
+import React, { useState, useEffect } from "react";
+import MovieCard from "./MovieCard";
+import MovieForm from "./MovieForm";
 
 export default function MovieList() {
   const [movies, setMovies] = useState([]);
@@ -9,7 +9,7 @@ export default function MovieList() {
 
   // Membaca data dari localStorage saat komponen pertama kali dimuat
   useEffect(() => {
-    const storedMovies = localStorage.getItem('movies');
+    const storedMovies = localStorage.getItem("movies");
     if (storedMovies) {
       setMovies(JSON.parse(storedMovies));
     }
@@ -17,7 +17,7 @@ export default function MovieList() {
 
   // Simpan data ke localStorage setiap kali ada perubahan
   useEffect(() => {
-    localStorage.setItem('movies', JSON.stringify(movies));
+    localStorage.setItem("movies", JSON.stringify(movies));
   }, [movies]);
 
   // Buka form untuk tambah
@@ -36,7 +36,7 @@ export default function MovieList() {
   const handleSave = (movie) => {
     if (movie.id) {
       // Update
-      setMovies(movies.map(m => (m.id === movie.id ? movie : m)));
+      setMovies(movies.map((m) => (m.id === movie.id ? movie : m)));
     } else {
       // Tambah baru
       const newMovie = {
@@ -57,22 +57,24 @@ export default function MovieList() {
   };
 
   const handleDelete = (id) => {
-    const confirm = window.confirm('Yakin ingin menghapus film ini?');
+    const confirm = window.confirm("Yakin ingin menghapus film ini?");
     if (confirm) {
-      setMovies(movies.filter(movie => movie.id !== id));
+      setMovies(movies.filter((movie) => movie.id !== id));
     }
   };
 
   const handleToggleFavorite = (id) => {
-    setMovies(movies.map(movie =>
-      movie.id === id ? { ...movie, isFavorite: !movie.isFavorite } : movie
-    ));
+    setMovies(
+      movies.map((movie) =>
+        movie.id === id ? { ...movie, isFavorite: !movie.isFavorite } : movie
+      )
+    );
   };
 
   return (
     <div className="px-6 py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">🎞️ Movie List</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Movie List</h1>
         <button
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow"
           onClick={handleAddClick}
@@ -107,7 +109,9 @@ export default function MovieList() {
             />
           ))
         ) : (
-          <p className="text-center col-span-full text-gray-600">Belum ada film yang ditambahkan.</p>
+          <p className="text-center col-span-full text-gray-600">
+            Belum ada film yang ditambahkan.
+          </p>
         )}
       </div>
     </div>
