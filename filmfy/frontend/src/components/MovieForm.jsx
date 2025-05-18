@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 export default function MovieForm({ onSave, onCancel, existingMovie }) {
   const [formData, setFormData] = useState({
-    title: '',
-    genre: '',
-    year: '',
-    rating: '',
-    poster: '',
+    title: "",
+    genre: "",
+    year: "",
+    rating: "",
+    poster: "",
   });
 
   // State untuk gambar sementara
-  const [imagePreview, setImagePreview] = useState('');
+  const [imagePreview, setImagePreview] = useState("");
 
   useEffect(() => {
     if (existingMovie) {
@@ -45,26 +45,31 @@ export default function MovieForm({ onSave, onCancel, existingMovie }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.genre || !formData.year || !formData.rating) {
-      alert('Semua field wajib diisi!');
+    if (
+      !formData.title ||
+      !formData.genre ||
+      !formData.year ||
+      !formData.rating
+    ) {
+      alert("Semua field wajib diisi!");
       return;
     }
 
     onSave(formData);
     setFormData({
-      title: '',
-      genre: '',
-      year: '',
-      rating: '',
-      poster: '',
+      title: "",
+      genre: "",
+      year: "",
+      rating: "",
+      poster: "",
     });
-    setImagePreview('');
+    setImagePreview("");
   };
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-md max-w-md w-full mx-auto mt-8">
       <h2 className="text-2xl font-bold mb-4 text-center">
-        {existingMovie ? 'Edit Movie' : 'Add New Movie'}
+        {existingMovie ? "Edit Movie" : "Add New Movie"}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
@@ -102,7 +107,9 @@ export default function MovieForm({ onSave, onCancel, existingMovie }) {
           max="10"
         />
         <div>
-          <label htmlFor="poster" className="block text-gray-700">Poster (Image)</label>
+          <label htmlFor="poster" className="block text-gray-700">
+            Poster (Image)
+          </label>
           <input
             type="file"
             id="poster"
@@ -132,7 +139,7 @@ export default function MovieForm({ onSave, onCancel, existingMovie }) {
             type="submit"
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
           >
-            {existingMovie ? 'Update' : 'Add'}
+            {existingMovie ? "Update" : "Add"}
           </button>
         </div>
       </form>

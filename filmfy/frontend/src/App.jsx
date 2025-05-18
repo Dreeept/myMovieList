@@ -1,20 +1,65 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard"; // halaman setelah login
-import MovieList from "./components/MovieList";
-import UserList from "./components/UserList";
+// App.jsx
+import React, { useState, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import Login from "./pages/Login"; // Sesuaikan path jika perlu
+import Signup from "./pages/Signup";
+import Dashboard from "./pages/Dashboard";
+import Favorites from "./pages/Favorites";
 
-function App() {
+export default function App() {
+  const [movies, setMovies] = useState([]);
+
+  // Debug load data dari localStorage
+  useEffect(() => {
+    console.log(
+      "Load movies from localStorage:",
+      localStorage.getItem("movies")
+    );
+    const storedMovies = localStorage.getItem("movies");
+    if (storedMovies) {
+      setMovies(JSON.parse(storedMovies));
+    }
+  }, []);
+
+  // Debug simpan data ke localStorage
+  useEffect(() => {
+    console.log("Saving movies to localStorage:", movies);
+    localStorage.setItem("movies", JSON.stringify(movies));
+  }, [movies]);
+
+  // // Load movies dari localStorage saat awal load aplikasi
+  // useEffect(() => {
+  //   const storedMovies = localStorage.getItem("movies");
+  //   if (storedMovies) {
+  //     setMovies(JSON.parse(storedMovies));
+  //   }
+  // }, []);
+
+  // // Simpan movies ke localStorage saat movies berubah
+  // useEffect(() => {
+  //   localStorage.setItem("movies", JSON.stringify(movies));
+  // }, [movies]);
+
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/" element={<MovieList />} />
-        <Route path="/users" element={<UserList />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/dashboard"
+          element={<Dashboard movies={movies} setMovies={setMovies} />}
+        />
+        <Route
+          path="/favorites"
+          element={<Favorites movies={movies} setMovies={setMovies} />}
+        />
       </Routes>
     </Router>
   );
 }
-
-export default App;

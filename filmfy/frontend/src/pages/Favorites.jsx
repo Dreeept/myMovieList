@@ -1,17 +1,15 @@
-// Dashboard.jsx
+// Favorites.jsx
 import React from "react";
 import Navbar from "../components/Navbar";
-import MovieList from "../components/MovieList";
 
-export default function Dashboard({ movies, setMovies }) {
+export default function Favorites({ movies }) {
   const favoriteMovies = movies.filter((movie) => movie.isFavorite);
 
   return (
     <>
       <Navbar />
-
       <div className="p-4 mt-8">
-        <h2 className="text-2xl font-bold mb-4">Film Favorit</h2>
+        <h2 className="text-2xl font-bold mb-4">Semua Film Favorit</h2>
 
         {favoriteMovies.length === 0 ? (
           <p className="text-gray-600">Belum ada film favorit.</p>
@@ -30,16 +28,7 @@ export default function Dashboard({ movies, setMovies }) {
             ))}
           </div>
         )}
-
-        <a
-          href="/favorites"
-          className="text-blue-500 mt-4 inline-block hover:underline"
-        >
-          Lihat Semua Favorit
-        </a>
       </div>
-
-      <MovieList movies={movies} setMovies={setMovies} />
     </>
   );
 }
