@@ -14,36 +14,18 @@ import Favorites from "./pages/Favorites";
 export default function App() {
   const [movies, setMovies] = useState([]);
 
-  // Debug load data dari localStorage
+  // Load movies dari localStorage saat awal load aplikasi
   useEffect(() => {
-    console.log(
-      "Load movies from localStorage:",
-      localStorage.getItem("movies")
-    );
     const storedMovies = localStorage.getItem("movies");
     if (storedMovies) {
       setMovies(JSON.parse(storedMovies));
     }
   }, []);
 
-  // Debug simpan data ke localStorage
+  // Simpan movies ke localStorage saat movies berubah
   useEffect(() => {
-    console.log("Saving movies to localStorage:", movies);
     localStorage.setItem("movies", JSON.stringify(movies));
   }, [movies]);
-
-  // // Load movies dari localStorage saat awal load aplikasi
-  // useEffect(() => {
-  //   const storedMovies = localStorage.getItem("movies");
-  //   if (storedMovies) {
-  //     setMovies(JSON.parse(storedMovies));
-  //   }
-  // }, []);
-
-  // // Simpan movies ke localStorage saat movies berubah
-  // useEffect(() => {
-  //   localStorage.setItem("movies", JSON.stringify(movies));
-  // }, [movies]);
 
   return (
     <Router>

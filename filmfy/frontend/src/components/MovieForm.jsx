@@ -89,22 +89,39 @@ export default function MovieForm({ onSave, onCancel, existingMovie }) {
           className="w-full px-4 py-2 border border-gray-300 rounded-lg"
         />
         <input
-          type="number"
+          type="text" // ubah dari number ke text
           name="year"
           placeholder="Release Year"
           value={formData.year}
-          onChange={handleChange}
+          onChange={(e) => {
+            // Validasi hanya angka yang boleh dimasukkan
+            const val = e.target.value;
+            if (/^\d*$/.test(val)) {
+              // hanya angka 0-9 dan boleh kosong
+              setFormData((prev) => ({
+                ...prev,
+                year: val,
+              }));
+            }
+          }}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg"
         />
         <input
-          type="number"
+          type="text"
           name="rating"
           placeholder="Rating (1-10)"
           value={formData.rating}
-          onChange={handleChange}
+          onChange={(e) => {
+            const val = e.target.value;
+            // hanya terima angka 1 sampai 10
+            if (/^([1-9]|10)?$/.test(val)) {
+              setFormData((prev) => ({
+                ...prev,
+                rating: val,
+              }));
+            }
+          }}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-          min="1"
-          max="10"
         />
         <div>
           <label htmlFor="poster" className="block text-gray-700">

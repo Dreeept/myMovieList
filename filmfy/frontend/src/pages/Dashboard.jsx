@@ -1,9 +1,18 @@
-// Dashboard.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
+import { saveMovies, loadMovies } from "../utils/LocalStorage";
 import MovieList from "../components/MovieList";
 
-export default function Dashboard({ movies, setMovies }) {
+export default function Dashboard() {
+  // Inisialisasi movies dari localStorage
+  const [movies, setMovies] = useState(() => loadMovies());
+
+  // Simpan movies ke localStorage setiap movies berubah
+  useEffect(() => {
+    saveMovies(movies);
+  }, [movies]);
+
+  // Filter film favorit
   const favoriteMovies = movies.filter((movie) => movie.isFavorite);
 
   return (
@@ -39,6 +48,7 @@ export default function Dashboard({ movies, setMovies }) {
         </a>
       </div>
 
+      {/* Kirim props movies dan setMovies ke MovieList */}
       <MovieList movies={movies} setMovies={setMovies} />
     </>
   );

@@ -14,7 +14,7 @@ export default function Navbar() {
   };
 
   const handleAvatarClick = () => {
-    navigate("/users"); // arahkan ke halaman /users
+    navigate(""); // arahkan ke halaman /users
   };
 
   return (
