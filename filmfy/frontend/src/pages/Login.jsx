@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -8,14 +7,44 @@ export default function Login() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); // Reset error
 
-    // Logika dummy
-    if (email === "admin@123" && password === "admin") {
+    try {
+      const response = await fetch("http://localhost:6543/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        // Kalau status bukan 2xx, anggap login gagal
+        const errData = await response.json();
+        setError(errData.error || "Login gagal. Coba lagi.");
+        return;
+      }
+
+      // Jika login berhasil, misal backend kirim token atau user data
+      const data = await response.json();
+
+      // Simpan userId ke localStorage:
+      if (data.user && data.user.id) {
+        localStorage.setItem("userId", data.user.id);
+      }
+
+      // Simpan token ke localStorage/sessionStorage kalau ada
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      // Redirect ke halaman dashboard atau homepage
       navigate("/dashboard");
-    } else {
-      setError("Email atau password salah!");
+    } catch (err) {
+      setError("Terjadi kesalahan jaringan. Coba lagi nanti.");
+      console.error("Login error:", err);
     }
   };
 
@@ -37,6 +66,7 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="you@example.com"
+              required
             />
           </div>
           <div>
@@ -47,6 +77,7 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="••••••••"
+              required
             />
           </div>
           <button

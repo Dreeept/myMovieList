@@ -1,36 +1,84 @@
-# Logs
+#################################
+# LOG FILES
+#################################
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+# Frontend/backend log folders (jaga-jaga)
+frontend/logs
+backend/logs
 
-# Node modules
-node_modules
-
+#################################
+# NODE MODULES & FRONTEND ARTIFACTS
+#################################
+node_modules/
+frontend/node_modules/
+backend/node_modules/
 # Build output
 build/
 dist/
 dist-ssr/
+frontend/build/
+frontend/dist/
+frontend/dist-ssr/
+backend/build/
+backend/dist/
 
-# Environment files
+#################################
+# ENVIRONMENT FILES
+#################################
+filmfy_env/
 .env
-.env.* 
+.env.*
+frontend/.env
+frontend/.env.*
+backend/.env
+backend/.env.*
+backend/filmfy_env/
+backend/env*/
+backend/venv/
 
-# System Files
-.DS_Store
-Thumbs.db
+#################################
+# PYTHON ARTIFACTS
+#################################
+*.egg
+*.egg-info
+*.pyc
+*$py.class
+*~
+__pycache__/
+backend/__pycache__/
+# Coverage & test
+.coverage
+coverage.xml
+coverage
+test
+.tox/
+nosetests.xml
+tmp/
+Data.fs*
 
-# Editor directories and files
+#################################
+# EDITOR & IDE FILES
+#################################
 .vscode/*
 !.vscode/extensions.json
 .idea
+*.sublime-project
+*.sublime-workspace
 
-# OS generated files
+#################################
+# SYSTEM & OS FILES
+#################################
+.DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+.*.sw?
+

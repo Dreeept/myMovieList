@@ -1,8 +1,10 @@
-// Favorites.jsx
-import React from "react";
+import React, { useContext } from "react";
 import Navbar from "../components/Navbar";
+import { MoviesContext } from "../context/MovieContext";
 
-export default function Favorites({ movies }) {
+export default function Favorites() {
+  const { movies } = useContext(MoviesContext);
+
   const favoriteMovies = movies.filter((movie) => movie.isFavorite);
 
   return (
@@ -18,11 +20,29 @@ export default function Favorites({ movies }) {
             {favoriteMovies.map((movie) => (
               <div
                 key={movie.id}
-                className="bg-gray-800 text-white p-4 rounded-lg shadow-md"
+                className="bg-white text-black p-4 rounded-lg shadow-md"
               >
+                {/* Poster */}
+                <img
+                  src={
+                    movie.poster ||
+                    "https://via.placeholder.com/300x400?text=No+Image"
+                  }
+                  alt={movie.title}
+                  className="w-full h-60 object-cover rounded-md mb-4"
+                />
+
+                {/* Judul */}
                 <h3 className="text-xl font-semibold">{movie.title}</h3>
+
+                {/* Tahun & Genre */}
                 <p className="text-sm text-gray-400">
-                  {movie.release_date || movie.year}
+                  {movie.release_date || movie.year} &nbsp;|&nbsp; {movie.genre}
+                </p>
+
+                {/* Rating */}
+                <p className="mt-1 text-yellow-600 font-bold">
+                  ⭐ {movie.rating}/10
                 </p>
               </div>
             ))}

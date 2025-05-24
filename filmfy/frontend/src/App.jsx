@@ -1,47 +1,32 @@
-// App.jsx
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
-import Login from "./pages/Login"; // Sesuaikan path jika perlu
+import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Favorites from "./pages/Favorites";
+import { MoviesProvider } from "./context/MovieContext";
+import Profile from "./pages/Profile";
+import ProfileEdit from "./pages/ProfileEdit";
 
 export default function App() {
-  const [movies, setMovies] = useState([]);
-
-  // Load movies dari localStorage saat awal load aplikasi
-  useEffect(() => {
-    const storedMovies = localStorage.getItem("movies");
-    if (storedMovies) {
-      setMovies(JSON.parse(storedMovies));
-    }
-  }, []);
-
-  // Simpan movies ke localStorage saat movies berubah
-  useEffect(() => {
-    localStorage.setItem("movies", JSON.stringify(movies));
-  }, [movies]);
-
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route
-          path="/dashboard"
-          element={<Dashboard movies={movies} setMovies={setMovies} />}
-        />
-        <Route
-          path="/favorites"
-          element={<Favorites movies={movies} setMovies={setMovies} />}
-        />
-      </Routes>
-    </Router>
+    <MoviesProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/edit" element={<ProfileEdit />} />
+        </Routes>
+      </Router>
+    </MoviesProvider>
   );
 }
