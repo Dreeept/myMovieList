@@ -4,20 +4,36 @@ export default function MovieForm({ onSave, onCancel, existingMovie }) {
   const [formData, setFormData] = useState({
     title: "",
     genre: "",
-    year: "",
-    rating: "",
-    poster: "",
+    year: "", // Biarkan sebagai string, backend akan handle konversi
+    rating: "", // Biarkan sebagai string
+    // Hapus 'poster' dari state utama
   });
 
-  // State untuk gambar sementara
+  // State terpisah untuk File Object poster
+  const [posterFile, setPosterFile] = useState(null);
+  // State untuk preview gambar
   const [imagePreview, setImagePreview] = useState("");
 
   useEffect(() => {
     if (existingMovie) {
-      setFormData(existingMovie);
-      setImagePreview(existingMovie.poster); // Menampilkan gambar poster yang sudah ada
+      setFormData({
+        title: existingMovie.title || "",
+        genre: existingMovie.genre || "",
+        year: existingMovie.release_year
+          ? String(existingMovie.release_year)
+          : "", // Ambil dari release_year
+        rating: existingMovie.rating ? String(existingMovie.rating) : "",
+      });
+      // Gunakan poster_url untuk preview jika ada, jika tidak, jangan tampilkan apa-apa
+      setImagePreview(existingMovie.poster_url || "");
+      setPosterFile(null); // Reset file saat edit
+    } else {
+      // Reset form jika tidak ada existingMovie (untuk kasus 'Add New')
+      setFormData({ title: "", genre: "", year: "", rating: "" });
+      setImagePreview("");
+      setPosterFile(null);
     }
-  }, [existingMovie]);
+  }, [existingMovie]); // Jalankan saat existingMovie berubah
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -30,15 +46,17 @@ export default function MovieForm({ onSave, onCancel, existingMovie }) {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setPosterFile(file); // <-- SIMPAN FILE OBJECT
+
+      // Buat preview (tetap pakai FileReader tapi hanya untuk preview)
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result); // Set gambar yang di-upload sebagai preview
-        setFormData((prev) => ({
-          ...prev,
-          poster: reader.result, // Simpan gambar dalam format base64
-        }));
+        setImagePreview(reader.result);
       };
-      reader.readAsDataURL(file); // Mengubah gambar menjadi format base64
+      reader.readAsDataURL(file);
+    } else {
+      setPosterFile(null);
+      setImagePreview(existingMovie ? existingMovie.poster_url : ""); // Kembali ke preview lama jika ada
     }
   };
 
@@ -55,15 +73,26 @@ export default function MovieForm({ onSave, onCancel, existingMovie }) {
       return;
     }
 
-    onSave(formData);
-    setFormData({
-      title: "",
-      genre: "",
-      year: "",
-      rating: "",
-      poster: "",
-    });
-    setImagePreview("");
+    // --- BUAT FormData DI SINI ---
+    const dataToSend = new FormData();
+    dataToSend.append("title", formData.title);
+    dataToSend.append("genre", formData.genre);
+    dataToSend.append("release_year", formData.year); // Kirim sebagai string
+    dataToSend.append("rating", formData.rating); // Kirim sebagai string
+
+    // Tambahkan file HANYA jika ada file baru yang dipilih
+    if (posterFile) {
+      dataToSend.append("poster", posterFile);
+    }
+    // ----------------------------
+
+    // Kirim FormData ke parent (atau panggil context langsung)
+    onSave(dataToSend, existingMovie ? existingMovie.id : null);
+
+    // Reset form (mungkin lebih baik dilakukan di parent setelah save sukses)
+    // setFormData({ title: "", genre: "", year: "", rating: "" });
+    // setImagePreview("");
+    // setPosterFile(null);
   };
 
   return (
@@ -72,6 +101,7 @@ export default function MovieForm({ onSave, onCancel, existingMovie }) {
         {existingMovie ? "Edit Movie" : "Add New Movie"}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* ... Input fields Anda (sudah cukup baik) ... */}
         <input
           type="text"
           name="title"
@@ -89,19 +119,15 @@ export default function MovieForm({ onSave, onCancel, existingMovie }) {
           className="w-full px-4 py-2 border border-gray-300 rounded-lg"
         />
         <input
-          type="text" // ubah dari number ke text
+          type="text"
           name="year"
           placeholder="Release Year"
           value={formData.year}
           onChange={(e) => {
-            // Validasi hanya angka yang boleh dimasukkan
             const val = e.target.value;
-            if (/^\d*$/.test(val)) {
-              // hanya angka 0-9 dan boleh kosong
-              setFormData((prev) => ({
-                ...prev,
-                year: val,
-              }));
+            if (/^\d*$/.test(val) && val.length <= 4) {
+              // Batasi 4 digit
+              setFormData((prev) => ({ ...prev, year: val }));
             }
           }}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg"
@@ -113,12 +139,8 @@ export default function MovieForm({ onSave, onCancel, existingMovie }) {
           value={formData.rating}
           onChange={(e) => {
             const val = e.target.value;
-            // hanya terima angka 1 sampai 10
             if (/^([1-9]|10)?$/.test(val)) {
-              setFormData((prev) => ({
-                ...prev,
-                rating: val,
-              }));
+              setFormData((prev) => ({ ...prev, rating: val }));
             }
           }}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg"
@@ -131,6 +153,7 @@ export default function MovieForm({ onSave, onCancel, existingMovie }) {
             type="file"
             id="poster"
             name="poster"
+            accept="image/png, image/jpeg, image/jpg" // Tambah accept
             onChange={handleFileChange}
             className="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg"
           />
@@ -144,6 +167,7 @@ export default function MovieForm({ onSave, onCancel, existingMovie }) {
             </div>
           )}
         </div>
+        {/* ... Tombol Anda (sudah cukup baik) ... */}
         <div className="flex justify-between">
           <button
             type="button"

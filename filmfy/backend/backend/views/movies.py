@@ -53,7 +53,7 @@ def _save_poster(poster_file_storage):
         poster_file_storage.file.seek(0)
         with open(output_path, 'wb') as output_f:
             shutil.copyfileobj(poster_file_storage.file, output_f)
-        return 'posters/' + unique_filename # Simpan path relatif
+        return 'postersMovie/' + unique_filename # Simpan path relatif
         
     # Jika kondisi di atas tidak terpenuhi, berarti tidak ada file valid yang diupload
     return None
@@ -62,7 +62,7 @@ def _delete_poster(poster_path):
     """Helper function untuk menghapus file poster."""
     if poster_path:
         # Hapus prefix 'posters/' jika ada untuk mendapatkan nama file sebenarnya di direktori
-        actual_filename = poster_path.replace('posters/', '', 1)
+        actual_filename = poster_path.replace('postersMovie/', '', 1)
         full_path = os.path.join(POSTER_UPLOAD_DIR, actual_filename)
         if os.path.exists(full_path):
             try:
@@ -116,7 +116,7 @@ class MovieViews:
             # Menggunakan HTTPCreated (201) untuk respons yang berhasil membuat resource baru
             return HTTPCreated(json_body={
                 'message': 'Movie created successfully!',
-                'movie': new_movie.to_dict()
+                'movie': new_movie.to_dict(request=self.request)
             })
         except KeyError as e:
             return HTTPBadRequest(json_body={'error': f'Missing form field: {e}'})
@@ -136,7 +136,7 @@ class MovieViews:
         try:
             movies = self.dbsession.query(Movie).order_by(Movie.title).all()
             # Menggunakan list comprehension dengan to_dict()
-            data = [movie.to_dict() for movie in movies]
+            data = [movie.to_dict(request=self.request) for movie in movies]
             return data # HTTPOk (200) adalah default jika tidak ada exception
         except Exception as e:
             print(f"Error listing movies: {e}")
@@ -150,7 +150,7 @@ class MovieViews:
             movie_id = int(self.request.matchdict['id'])
             movie = self.dbsession.query(Movie).get(movie_id)
             if movie:
-                return movie.to_dict()
+                return movie.to_dict(request=self.request)
             else:
                 return HTTPNotFound(json_body={'error': 'Movie not found'})
         except ValueError:
