@@ -5,11 +5,20 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false); // Tambahkan state loading
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Reset error
+    setError("");
+    setLoading(true);
+
+    if (!email.trim() || !password) {
+      // Validasi input dasar
+      setError("Email dan password tidak boleh kosong!");
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch("http://localhost:6543/api/login", {
@@ -20,31 +29,34 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
 
+      // Selalu coba parse JSON dari respons, bahkan untuk error
+      const responseData = await response.json();
+
       if (!response.ok) {
-        // Kalau status bukan 2xx, anggap login gagal
-        const errData = await response.json();
-        setError(errData.error || "Login gagal. Coba lagi.");
+        // Jika status bukan 2xx, anggap login gagal
+        setError(
+          responseData.error || "Login gagal. Periksa email dan password Anda."
+        );
+        setLoading(false);
         return;
       }
 
-      // Jika login berhasil, misal backend kirim token atau user data
-      const data = await response.json();
-
-      // Simpan userId ke localStorage:
-      if (data.user && data.user.id) {
-        localStorage.setItem("userId", data.user.id);
+      // Jika login berhasil
+      // Backend kita mengirimkan data.user
+      if (responseData.user && responseData.user.id) {
+        localStorage.setItem("userId", responseData.user.id);
+        // Anda mungkin ingin menyimpan seluruh objek user atau token jika ada
+        // localStorage.setItem("userData", JSON.stringify(responseData.user));
+        navigate("/dashboard"); // Redirect ke dashboard
+      } else {
+        // Kasus jika respons OK tapi tidak ada user.id (seharusnya tidak terjadi dengan backend kita)
+        setError("Gagal mendapatkan data pengguna setelah login.");
       }
-
-      // Simpan token ke localStorage/sessionStorage kalau ada
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-
-      // Redirect ke halaman dashboard atau homepage
-      navigate("/dashboard");
     } catch (err) {
-      setError("Terjadi kesalahan jaringan. Coba lagi nanti.");
+      setError("Tidak dapat terhubung ke server. Coba lagi nanti.");
       console.error("Login error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,6 +70,7 @@ export default function Login() {
           <div className="mb-4 text-red-600 text-sm text-center">{error}</div>
         )}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Email */}
           <div>
             <label className="block text-gray-700">Email</label>
             <input
@@ -69,6 +82,7 @@ export default function Login() {
               required
             />
           </div>
+          {/* Password */}
           <div>
             <label className="block text-gray-700">Password</label>
             <input
@@ -82,11 +96,11 @@ export default function Login() {
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200"
+            disabled={loading} // Disable tombol saat loading
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200 disabled:opacity-50"
           >
-            Sign In
+            {loading ? "Memproses..." : "Sign In"}
           </button>
-
           <div className="text-center mt-4 text-sm text-gray-600">
             Belum Punya Akun?{" "}
             <Link to="/signup" className="text-blue-600 hover:underline">

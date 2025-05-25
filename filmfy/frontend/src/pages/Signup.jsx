@@ -7,61 +7,76 @@ export default function Signup() {
   const [bio, setBio] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [profilePhoto, setProfilePhoto] = useState(null); // Ini akan jadi File object
   const [profilePhotoPreview, setProfilePhotoPreview] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false); // Tambahkan state loading
   const navigate = useNavigate();
 
-  // Handle preview photo ketika user pilih file
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setProfilePhoto(file);
-      // Preview URL
-      setProfilePhotoPreview(URL.createObjectURL(file));
+      setProfilePhoto(file); // Simpan File object
+      setProfilePhotoPreview(URL.createObjectURL(file)); // Buat URL sementara untuk preview
+    } else {
+      setProfilePhoto(null);
+      setProfilePhotoPreview(null);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); // Reset error setiap kali submit
+    setLoading(true); // Mulai loading
 
-    // Validasi form
     if (password !== confirmPassword) {
       setError("Password dan konfirmasi password tidak sama!");
+      setLoading(false);
       return;
     }
 
-    if (!username.trim()) {
-      setError("Username tidak boleh kosong!");
+    if (!username.trim() || !email.trim() || !password) {
+      // Pastikan email & password juga tidak hanya spasi
+      setError("Username, email, dan password tidak boleh kosong!");
+      setLoading(false);
       return;
     }
 
-    // Membuat FormData untuk mengirim data termasuk file
-    const formData = new FormData();
-    formData.append("username", username);
-    formData.append("email", email);
-    formData.append("bio", bio);
-    formData.append("password", password); // Jangan di-hash di frontend, backend yang tangani
+    const formDataToSend = new FormData(); // Ubah nama variabel agar lebih jelas
+    formDataToSend.append("username", username);
+    formDataToSend.append("email", email);
+    formDataToSend.append("bio", bio);
+    formDataToSend.append("password", password);
+    formDataToSend.append("confirm_password", confirmPassword); // Kirim juga confirm_password
+
     if (profilePhoto) {
-      formData.append("profile_photo", profilePhoto); // Menambahkan foto profil
+      // Nama field 'foto_profil' harus sama dengan yang diharapkan backend
+      formDataToSend.append("foto_profil", profilePhoto);
     }
 
     try {
-      // Kirim data ke backend menggunakan fetch
       const response = await fetch("http://localhost:6543/api/signup", {
         method: "POST",
-        body: formData,
+        body: formDataToSend, // Kirim formDataToSend
       });
 
+      const responseData = await response.json(); // Selalu coba parse JSON respons
+
       if (response.ok) {
+        // response.ok berarti status 200-299
         alert("Akun berhasil dibuat! Silakan login.");
         navigate("/login");
       } else {
-        const data = await response.json();
-        setError(data.message || "Terjadi kesalahan, coba lagi.");
+        // Gunakan pesan error dari backend jika ada, jika tidak, pesan generik
+        setError(
+          responseData.error || "Terjadi kesalahan saat mendaftar, coba lagi."
+        );
       }
     } catch (error) {
-      setError("Terjadi kesalahan, coba lagi.");
+      console.error("Signup fetch error:", error);
+      setError("Tidak dapat terhubung ke server. Coba lagi nanti.");
+    } finally {
+      setLoading(false); // Selesai loading
     }
   };
 
@@ -75,6 +90,7 @@ export default function Signup() {
           <div className="mb-4 text-red-600 text-sm text-center">{error}</div>
         )}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Username */}
           <div>
             <label className="block text-gray-700">Username</label>
             <input
@@ -86,7 +102,7 @@ export default function Signup() {
               required
             />
           </div>
-
+          {/* Email */}
           <div>
             <label className="block text-gray-700">Email</label>
             <input
@@ -98,7 +114,7 @@ export default function Signup() {
               required
             />
           </div>
-
+          {/* Bio Singkat */}
           <div>
             <label className="block text-gray-700">Bio Singkat</label>
             <textarea
@@ -109,7 +125,7 @@ export default function Signup() {
               rows={3}
             />
           </div>
-
+          {/* Foto Profil */}
           <div>
             <label className="block text-gray-700 mb-1">Foto Profil</label>
             {profilePhotoPreview && (
@@ -121,12 +137,12 @@ export default function Signup() {
             )}
             <input
               type="file"
-              accept="image/*"
+              accept="image/*" // Batasi tipe file
               onChange={handlePhotoChange}
               className="w-full"
             />
           </div>
-
+          {/* Password */}
           <div>
             <label className="block text-gray-700">Password</label>
             <input
@@ -138,7 +154,7 @@ export default function Signup() {
               required
             />
           </div>
-
+          {/* Confirm Password */}
           <div>
             <label className="block text-gray-700">Confirm Password</label>
             <input
@@ -153,9 +169,10 @@ export default function Signup() {
 
           <button
             type="submit"
-            className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition duration-200"
+            disabled={loading} // Disable tombol saat loading
+            className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition duration-200 disabled:opacity-50"
           >
-            Sign Up
+            {loading ? "Mendaftar..." : "Sign Up"}
           </button>
 
           <div className="text-center mt-4 text-sm text-gray-600">

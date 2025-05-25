@@ -100,28 +100,40 @@ export default function ProfileEdit() {
       formData.append("username", user.username);
       formData.append("email", user.email);
       formData.append("bio", user.bio);
+
       if (photoFile) {
-        formData.append("profile_photo", photoFile);
+        // UBAH KEY DI SINI agar konsisten dengan backend (signup)
+        formData.append("foto_profil", photoFile);
       }
 
-      // Kirim permintaan PUT untuk update profil
+      // Kirim permintaan ke backend
       const response = await fetch(`http://localhost:6543/api/user/${userId}`, {
-        method: "PUT",
+        method: "POST", // <-- UBAH DARI "PUT" MENJADI "POST"
         body: formData,
+        // Tidak perlu header 'Content-Type' saat menggunakan FormData, browser akan mengaturnya
       });
 
       if (!response.ok) {
-        const errData = await response.json();
+        const errData = await response
+          .json()
+          .catch(() => ({ error: "Gagal update profil." })); // Tambah .catch() untuk fallback
         throw new Error(errData.error || "Gagal update profil.");
       }
 
-      // Setelah PUT berhasil, ambil ulang data user terbaru untuk memperbarui state
-      await fetchUserData();
+      // Setelah POST berhasil, ambil ulang data user terbaru
+      // (fetchUserData akan di-trigger oleh useEffect karena userId tidak berubah,
+      // atau Anda bisa panggil langsung jika mau lebih eksplisit setelah setUser dari respons)
+      const updatedUserData = await response.json(); // Ambil data user yang diperbarui dari respons
+      setUser(updatedUserData.user); // Update state user lokal dengan data baru
+      setPreviewPhoto(
+        updatedUserData.user.profile_url ||
+          (updatedUserData.user.profile_photo
+            ? `http://localhost:6543/static/${updatedUserData.user.profile_photo}`
+            : null)
+      );
 
-      // --- BARIS KODE BARU TAMBAHAN DI SINI ---
       // Memicu event kustom yang didengarkan oleh komponen Navbar
       window.dispatchEvent(new Event("profileUpdated"));
-      // ---------------------------------------
 
       setSuccessMessage("Profil berhasil diperbarui!");
       setPhotoFile(null); // Reset photoFile setelah berhasil diunggah
@@ -131,7 +143,7 @@ export default function ProfileEdit() {
         navigate("/profile");
       }, 1500);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Terjadi kesalahan yang tidak diketahui.");
     } finally {
       setSaving(false);
     }

@@ -36,23 +36,35 @@ export default function Profile() {
     if (!window.confirm("Apakah kamu yakin ingin menghapus akun ini?")) {
       return;
     }
-
     setDeleting(true);
+    setError(""); // Reset error sebelumnya
 
     fetch(`http://localhost:6543/api/user/${userId}`, {
       method: "DELETE",
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Gagal menghapus akun");
-        return res.json();
+      .then(async (res) => {
+        // Tambahkan async untuk membaca teks error jika ada
+        // Status 204 (No Content) adalah sukses untuk DELETE
+        if (res.ok || res.status === 204) {
+          return; // Tidak ada body untuk di-parse, langsung lanjut
+        }
+        // Jika bukan 204 dan tidak ok, coba parse error
+        const errData = await res
+          .json()
+          .catch(() => ({ error: "Gagal menghapus akun" })); // Fallback jika parsing gagal
+        throw new Error(errData.error || "Gagal menghapus akun");
       })
       .then(() => {
         alert("Akun berhasil dihapus");
         localStorage.removeItem("userId");
+        // Jika Anda menyimpan data user lain di localStorage, hapus juga
+        // localStorage.removeItem("userData");
         navigate("/login");
       })
       .catch((err) => {
         alert(err.message || "Terjadi kesalahan saat menghapus akun");
+      })
+      .finally(() => {
         setDeleting(false);
       });
   };
