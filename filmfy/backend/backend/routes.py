@@ -22,11 +22,13 @@ def includeme(config):
     config.add_route('api_movie_delete',  '/api/movies/{id:\d+}', request_method='DELETE')
     # --- (Tambahkan rute API lain jika ada) ---
 
-    # --- RUTE-RUTE UNTUK USER ---
+    # --- RUTE-RUTE UNTUK USER (DITAMBAHKAN LOGOUT & CHECK_AUTH) ---
     config.add_route('api_signup', '/api/signup', request_method='POST')
     config.add_route('api_login', '/api/login', request_method='POST')
+    config.add_route('api_logout', '/api/logout', request_method='POST') # <--- DITAMBAHKAN
+    config.add_route('api_check_auth', '/api/check_auth', request_method='GET') # <--- DITAMBAHKAN
     config.add_route('api_user_profile', '/api/user/{id:\d+}', request_method='GET')
-    config.add_route('api_user_update', '/api/user/{id:\d+}', request_method='POST') # Menggunakan POST untuk FormData
+    config.add_route('api_user_update', '/api/user/{id:\d+}', request_method='POST')
     config.add_route('api_user_delete', '/api/user/{id:\d+}', request_method='DELETE')
     # -----------------------------
 
@@ -37,7 +39,8 @@ def includeme(config):
     # -----------------------------------------
 
     # --- Scan SEMUA Views Anda ---
+    # Pastikan ini sesuai dengan nama file .py di dalam folder views Anda
     config.scan('.views.default') 
     config.scan('.views.movies')
-    config.scan('.views.users')   # <-- TAMBAHKAN INI
+    config.scan('.views.users') 
     # --- (Scan view lain jika ada) ---

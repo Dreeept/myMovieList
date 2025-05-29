@@ -33,6 +33,7 @@ def main(global_config, **settings):
     """
     with Configurator(settings=settings) as config:
         config.include('pyramid_jinja2')
+        config.include('pyramid_beaker')
         config.include('.models')
         config.include('.routes') # Pastikan ini dipanggil SEBELUM subscriber jika rute ada di file lain
 
