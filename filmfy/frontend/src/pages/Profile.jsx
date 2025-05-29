@@ -1,76 +1,66 @@
-import React, { useEffect, useState } from "react";
+// filmfy/frontend/src/pages/Profile.jsx
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; // <-- Import useAuth
+import axios from "axios"; // <-- Import axios
 
 export default function Profile() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, isAuthenticated, logout } = useAuth(); // <-- Gunakan context
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
 
-  const userId = localStorage.getItem("userId");
-
-  useEffect(() => {
-    if (!userId) {
-      setError("User belum login");
-      setLoading(false);
-      return;
+  // Jika belum loading dan tidak authenticated, redirect (seharusnya sudah ditangani ProtectedRoute, tapi ini pengaman tambahan)
+  React.useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate("/login");
     }
+  }, [loading, isAuthenticated, navigate]);
 
-    fetch(`http://localhost:6543/api/user/${userId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Gagal mengambil data user");
-        return res.json();
-      })
-      .then((data) => {
-        setUser(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message || "Terjadi kesalahan");
-        setLoading(false);
-      });
-  }, [userId]);
-
-  const handleDelete = () => {
-    if (!window.confirm("Apakah kamu yakin ingin menghapus akun ini?")) {
+  const handleDelete = async () => {
+    // <-- Ubah ke async
+    if (
+      !window.confirm(
+        "Apakah kamu yakin ingin menghapus akun ini? Ini tidak dapat dibatalkan."
+      )
+    ) {
       return;
     }
     setDeleting(true);
-    setError(""); // Reset error sebelumnya
+    setError("");
 
-    fetch(`http://localhost:6543/api/user/${userId}`, {
-      method: "DELETE",
-    })
-      .then(async (res) => {
-        // Tambahkan async untuk membaca teks error jika ada
-        // Status 204 (No Content) adalah sukses untuk DELETE
-        if (res.ok || res.status === 204) {
-          return; // Tidak ada body untuk di-parse, langsung lanjut
-        }
-        // Jika bukan 204 dan tidak ok, coba parse error
-        const errData = await res
-          .json()
-          .catch(() => ({ error: "Gagal menghapus akun" })); // Fallback jika parsing gagal
-        throw new Error(errData.error || "Gagal menghapus akun");
-      })
-      .then(() => {
+    try {
+      // Gunakan axios dan user.id dari context
+      const response = await axios.delete(`/user/${user.id}`);
+
+      // Cek status 204 No Content
+      if (response.status === 204) {
         alert("Akun berhasil dihapus");
-        localStorage.removeItem("userId");
-        // Jika Anda menyimpan data user lain di localStorage, hapus juga
-        // localStorage.removeItem("userData");
+        await logout(); // Panggil fungsi logout dari context
+        navigate("/login"); // Navigate dilakukan oleh logout atau di sini
+      } else {
+        throw new Error("Gagal menghapus akun (respons tidak terduga).");
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+      setError(
+        err.response?.data?.error || "Terjadi kesalahan saat menghapus akun."
+      );
+      // Jika session habis, logout juga
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        await logout();
         navigate("/login");
-      })
-      .catch((err) => {
-        alert(err.message || "Terjadi kesalahan saat menghapus akun");
-      })
-      .finally(() => {
-        setDeleting(false);
-      });
+      }
+    } finally {
+      setDeleting(false);
+    }
   };
 
-  if (loading)
+  // Tampilkan loading jika context masih loading atau user belum ada
+  if (loading || !user)
     return <div className="text-center mt-8">Loading profile...</div>;
+
+  // Tampilkan error jika ada
   if (error)
     return (
       <div className="text-center mt-8 text-red-600 font-semibold">
@@ -84,9 +74,9 @@ export default function Profile() {
         Profil Saya
       </h1>
       <div className="flex flex-col items-center">
-        {user.profile_photo ? (
+        {user.profile_url ? ( // <-- Gunakan user.profile_url
           <img
-            src={`http://localhost:6543/static/${user.profile_photo}`}
+            src={user.profile_url} // <-- Langsung gunakan URL dari context
             alt="Foto Profil"
             className="w-32 h-32 rounded-full object-cover mb-6 border-4 border-blue-600"
           />

@@ -1,5 +1,7 @@
+// filmfy/frontend/src/pages/Signup.jsx
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; // <-- Import useAuth
 
 export default function Signup() {
   const [username, setUsername] = useState("");
@@ -7,17 +9,18 @@ export default function Signup() {
   const [bio, setBio] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [profilePhoto, setProfilePhoto] = useState(null); // Ini akan jadi File object
+  const [profilePhoto, setProfilePhoto] = useState(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false); // Tambahkan state loading
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { signup } = useAuth(); // <-- Gunakan context signup
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setProfilePhoto(file); // Simpan File object
-      setProfilePhotoPreview(URL.createObjectURL(file)); // Buat URL sementara untuk preview
+      setProfilePhoto(file);
+      setProfilePhotoPreview(URL.createObjectURL(file));
     } else {
       setProfilePhoto(null);
       setProfilePhotoPreview(null);
@@ -26,8 +29,8 @@ export default function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Reset error setiap kali submit
-    setLoading(true); // Mulai loading
+    setError("");
+    setLoading(true);
 
     if (password !== confirmPassword) {
       setError("Password dan konfirmasi password tidak sama!");
@@ -36,47 +39,39 @@ export default function Signup() {
     }
 
     if (!username.trim() || !email.trim() || !password) {
-      // Pastikan email & password juga tidak hanya spasi
       setError("Username, email, dan password tidak boleh kosong!");
       setLoading(false);
       return;
     }
 
-    const formDataToSend = new FormData(); // Ubah nama variabel agar lebih jelas
+    const formDataToSend = new FormData();
     formDataToSend.append("username", username);
     formDataToSend.append("email", email);
     formDataToSend.append("bio", bio);
     formDataToSend.append("password", password);
-    formDataToSend.append("confirm_password", confirmPassword); // Kirim juga confirm_password
+    formDataToSend.append("confirm_password", confirmPassword);
 
     if (profilePhoto) {
-      // Nama field 'foto_profil' harus sama dengan yang diharapkan backend
       formDataToSend.append("foto_profil", profilePhoto);
     }
 
     try {
-      const response = await fetch("http://localhost:6543/api/signup", {
-        method: "POST",
-        body: formDataToSend, // Kirim formDataToSend
-      });
-
-      const responseData = await response.json(); // Selalu coba parse JSON respons
-
-      if (response.ok) {
-        // response.ok berarti status 200-299
-        alert("Akun berhasil dibuat! Silakan login.");
-        navigate("/login");
+      // Panggil fungsi signup dari context
+      const success = await signup(formDataToSend);
+      if (success) {
+        navigate("/dashboard"); // <-- Langsung ke dashboard
       } else {
-        // Gunakan pesan error dari backend jika ada, jika tidak, pesan generik
-        setError(
-          responseData.error || "Terjadi kesalahan saat mendaftar, coba lagi."
-        );
+        // Jika signup mengembalikan false tapi tidak error (jarang terjadi)
+        setError("Terjadi kesalahan saat mendaftar.");
       }
-    } catch (error) {
-      console.error("Signup fetch error:", error);
-      setError("Tidak dapat terhubung ke server. Coba lagi nanti.");
+    } catch (err) {
+      setError(
+        err.response?.data?.error ||
+          "Terjadi kesalahan saat mendaftar, coba lagi."
+      );
+      console.error("Signup error:", err);
     } finally {
-      setLoading(false); // Selesai loading
+      setLoading(false);
     }
   };
 
@@ -137,7 +132,7 @@ export default function Signup() {
             )}
             <input
               type="file"
-              accept="image/*" // Batasi tipe file
+              accept="image/*"
               onChange={handlePhotoChange}
               className="w-full"
             />
@@ -169,7 +164,7 @@ export default function Signup() {
 
           <button
             type="submit"
-            disabled={loading} // Disable tombol saat loading
+            disabled={loading}
             className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition duration-200 disabled:opacity-50"
           >
             {loading ? "Mendaftar..." : "Sign Up"}

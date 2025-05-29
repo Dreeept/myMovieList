@@ -9,7 +9,6 @@ export default function Favorites() {
 
   return (
     <>
-      <Navbar />
       <div className="p-4 mt-8">
         <h2 className="text-2xl font-bold mb-4">Semua Film Favorit</h2>
 
@@ -25,8 +24,7 @@ export default function Favorites() {
                 {/* Poster */}
                 <img
                   src={
-                    movie.poster ||
-                    "https://via.placeholder.com/300x400?text=No+Image"
+                    movie.poster || "https://placehold.co/300x400?text=No+Image"
                   }
                   alt={movie.title}
                   className="w-full h-60 object-cover rounded-md mb-4"

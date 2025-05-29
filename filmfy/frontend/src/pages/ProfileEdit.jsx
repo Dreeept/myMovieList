@@ -1,65 +1,51 @@
+// filmfy/frontend/src/pages/ProfileEdit.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; // <-- Import useAuth
+import axios from "axios"; // <-- Import axios
 
 export default function ProfileEdit() {
   const navigate = useNavigate();
-  const userId = localStorage.getItem("userId");
+  const {
+    user: authUser,
+    loading: authLoading,
+    setUser: setAuthUser,
+    logout,
+  } = useAuth(); // <-- Gunakan context
 
-  const [user, setUser] = useState({
+  const [formData, setFormData] = useState({
     username: "",
     email: "",
     bio: "",
-    profile_photo: "", // Ini akan menampung URL dari backend atau Data URL untuk pratinjau
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Loading lokal untuk form
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState(""); // State baru untuk pesan sukses
-  const [photoFile, setPhotoFile] = useState(null); // File yang akan diunggah
-  const [previewPhoto, setPreviewPhoto] = useState(null); // URL pratinjau gambar lokal
+  const [successMessage, setSuccessMessage] = useState("");
+  const [photoFile, setPhotoFile] = useState(null);
+  const [previewPhoto, setPreviewPhoto] = useState(null);
 
-  // Fungsi untuk mengambil data user
-  const fetchUserData = async () => {
-    if (!userId) {
-      setError("User belum login");
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(""); // Hapus error sebelumnya saat mulai fetch
-    try {
-      const res = await fetch(`http://localhost:6543/api/user/${userId}`);
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(
-          `Gagal mengambil data user: ${res.status} ${errorText}`
-        );
-      }
-      const data = await res.json();
-      setUser(data);
-      // Saat data awal dimuat, set previewPhoto ke foto profil yang ada
-      setPreviewPhoto(
-        data.profile_photo
-          ? `http://localhost:6543/static/${data.profile_photo}`
-          : null
-      );
-    } catch (err) {
-      setError(err.message || "Terjadi kesalahan");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Set form data saat data user dari context tersedia
   useEffect(() => {
-    fetchUserData();
-  }, [userId]); // Dependensi hanya pada userId
+    if (!authLoading && authUser) {
+      setFormData({
+        username: authUser.username || "",
+        email: authUser.email || "",
+        bio: authUser.bio || "",
+      });
+      setPreviewPhoto(authUser.profile_url || null);
+      setLoading(false);
+    } else if (!authLoading && !authUser) {
+      // Jika tidak loading tapi tidak ada user, redirect
+      navigate("/login");
+    }
+  }, [authUser, authLoading, navigate]);
 
   const handleChange = (e) => {
-    setUser((prev) => ({
+    setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
-    // Hapus pesan sukses/error saat ada perubahan input
     setSuccessMessage("");
     setError("");
   };
@@ -67,24 +53,16 @@ export default function ProfileEdit() {
   const handleFileChange = (e) => {
     if (e.target.files.length > 0) {
       const file = e.target.files[0];
-      setPhotoFile(file); // Simpan file yang dipilih untuk diunggah
-
-      // Buat URL pratinjau lokal dari file
+      setPhotoFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreviewPhoto(reader.result); // Atur pratinjau agar langsung terlihat
+        setPreviewPhoto(reader.result);
       };
       reader.readAsDataURL(file);
     } else {
       setPhotoFile(null);
-      // Jika file dibatalkan, kembalikan pratinjau ke foto profil asli
-      setPreviewPhoto(
-        user.profile_photo
-          ? `http://localhost:6543/static/${user.profile_photo}`
-          : null
-      );
+      setPreviewPhoto(authUser.profile_url || null);
     }
-    // Hapus pesan sukses/error saat ada perubahan input file
     setSuccessMessage("");
     setError("");
   };
@@ -96,54 +74,36 @@ export default function ProfileEdit() {
     setSaving(true);
 
     try {
-      const formData = new FormData();
-      formData.append("username", user.username);
-      formData.append("email", user.email);
-      formData.append("bio", user.bio);
+      const dataToSubmit = new FormData();
+      dataToSubmit.append("username", formData.username);
+      dataToSubmit.append("email", formData.email);
+      dataToSubmit.append("bio", formData.bio);
 
       if (photoFile) {
-        // UBAH KEY DI SINI agar konsisten dengan backend (signup)
-        formData.append("foto_profil", photoFile);
+        dataToSubmit.append("foto_profil", photoFile);
       }
 
-      // Kirim permintaan ke backend
-      const response = await fetch(`http://localhost:6543/api/user/${userId}`, {
-        method: "POST", // <-- UBAH DARI "PUT" MENJADI "POST"
-        body: formData,
-        // Tidak perlu header 'Content-Type' saat menggunakan FormData, browser akan mengaturnya
-      });
+      // Gunakan axios dan authUser.id
+      const response = await axios.post(`/user/${authUser.id}`, dataToSubmit);
 
-      if (!response.ok) {
-        const errData = await response
-          .json()
-          .catch(() => ({ error: "Gagal update profil." })); // Tambah .catch() untuk fallback
-        throw new Error(errData.error || "Gagal update profil.");
+      if (response.status === 200 && response.data.user) {
+        setAuthUser(response.data.user); // <-- Update context global!
+        setSuccessMessage("Profil berhasil diperbarui!");
+        setPhotoFile(null);
+        setTimeout(() => {
+          navigate("/profile");
+        }, 1500);
+      } else {
+        throw new Error("Gagal update profil.");
       }
-
-      // Setelah POST berhasil, ambil ulang data user terbaru
-      // (fetchUserData akan di-trigger oleh useEffect karena userId tidak berubah,
-      // atau Anda bisa panggil langsung jika mau lebih eksplisit setelah setUser dari respons)
-      const updatedUserData = await response.json(); // Ambil data user yang diperbarui dari respons
-      setUser(updatedUserData.user); // Update state user lokal dengan data baru
-      setPreviewPhoto(
-        updatedUserData.user.profile_url ||
-          (updatedUserData.user.profile_photo
-            ? `http://localhost:6543/static/${updatedUserData.user.profile_photo}`
-            : null)
-      );
-
-      // Memicu event kustom yang didengarkan oleh komponen Navbar
-      window.dispatchEvent(new Event("profileUpdated"));
-
-      setSuccessMessage("Profil berhasil diperbarui!");
-      setPhotoFile(null); // Reset photoFile setelah berhasil diunggah
-
-      // Navigasi setelah beberapa saat agar pesan sukses terlihat
-      setTimeout(() => {
-        navigate("/profile");
-      }, 1500);
     } catch (err) {
-      setError(err.message || "Terjadi kesalahan yang tidak diketahui.");
+      console.error("Update profile error:", err);
+      setError(err.response?.data?.error || "Terjadi kesalahan.");
+      // Jika session habis, logout
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        await logout();
+        navigate("/login");
+      }
     } finally {
       setSaving(false);
     }
@@ -151,13 +111,6 @@ export default function ProfileEdit() {
 
   if (loading)
     return <div className="text-center mt-8 text-gray-700">Memuat data...</div>;
-  if (error && !successMessage)
-    // Tampilkan error utama jika tidak ada pesan sukses
-    return (
-      <div className="text-center mt-8 text-red-600 font-semibold p-4 bg-red-50 rounded">
-        Error: {error}
-      </div>
-    );
 
   return (
     <div className="max-w-md mx-auto mt-10 p-8 bg-white rounded-lg shadow-lg border border-gray-200">
@@ -180,7 +133,7 @@ export default function ProfileEdit() {
             type="text"
             id="username"
             name="username"
-            value={user.username}
+            value={formData.username} // <-- Gunakan formData
             onChange={handleChange}
             required
             className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150"
@@ -198,7 +151,7 @@ export default function ProfileEdit() {
             type="email"
             id="email"
             name="email"
-            value={user.email}
+            value={formData.email} // <-- Gunakan formData
             onChange={handleChange}
             required
             className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150"
@@ -215,7 +168,7 @@ export default function ProfileEdit() {
           <textarea
             id="bio"
             name="bio"
-            value={user.bio}
+            value={formData.bio} // <-- Gunakan formData
             onChange={handleChange}
             rows={4}
             className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 resize-y"
@@ -228,11 +181,7 @@ export default function ProfileEdit() {
           </label>
           {previewPhoto ? (
             <img
-              src={
-                previewPhoto.startsWith("http")
-                  ? `${previewPhoto}?t=${Date.now()}`
-                  : previewPhoto
-              } // Tambahkan cache busting
+              src={previewPhoto} // <-- Gunakan previewPhoto
               alt="Foto Profil"
               className="w-28 h-28 rounded-full mb-3 object-cover border-2 border-blue-600 shadow-md mx-auto"
             />
@@ -249,7 +198,6 @@ export default function ProfileEdit() {
           />
         </div>
 
-        {/* Tampilan pesan sukses atau error di bawah tombol */}
         {successMessage && (
           <p className="text-green-600 text-center font-medium bg-green-50 p-2 rounded">
             {successMessage}

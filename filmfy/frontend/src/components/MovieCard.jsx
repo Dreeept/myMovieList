@@ -9,7 +9,7 @@ export default function MovieCard({
 }) {
   // Gunakan poster_url jika ada, jika tidak, gunakan placeholder
   const imageUrl =
-    movie.poster_url || "https://via.placeholder.com/300x400?text=No+Image";
+    movie.poster_url || "https://placehold.co/300x400?text=No+Image";
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition w-full max-w-xs mx-auto">
