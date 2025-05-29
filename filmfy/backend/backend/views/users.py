@@ -147,10 +147,21 @@ class UserViews:
             return HTTPBadRequest(json_body={'error': f'An unexpected error occurred: {e}'})
 
     # --- LOGOUT ---
-    @view_config(route_name='api_logout', request_method='POST') # Tambahkan rute ini di routes.py
+    @view_config(route_name='api_logout', request_method='POST', renderer='json')
     def logout_view(self):
-        """Menghapus session pengguna."""
-        self.request.session.invalidate()
+        """Menghapus session pengguna dan cookie."""
+        session = self.request.session
+        session_key = self.request.registry.settings.get('session.key', 'session') # Ambil nama cookie dari .ini
+
+        session.invalidate() # Hapus session di server
+
+        # Hapus cookie di browser secara eksplisit
+        self.request.response.delete_cookie(
+            session_key, 
+            path=self.request.registry.settings.get('session.cookie_path', '/'),
+            domain=self.request.registry.settings.get('session.cookie_domain', None)
+        )
+        
         return HTTPOk(json_body={'message': 'Logout successful!'})
 
     # --- CHECK AUTH ---
