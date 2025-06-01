@@ -1,105 +1,153 @@
 // filmfy/frontend/src/pages/Dashboard.jsx
 import React, { useContext, useState } from "react";
-// Hapus import Navbar karena sudah ada di ProtectedRoute
 import MovieList from "../components/MovieList";
 import MovieForm from "../components/MovieForm";
 import Modal from "../components/Modal";
 import { MoviesContext } from "../context/MovieContext";
-import { useAuth } from "../context/AuthContext"; // <-- Import useAuth
-import { useNavigate } from "react-router-dom"; // <-- Import useNavigate
+import { useAuth } from "../context/AuthContext";
+import { useNavigate, Link } from "react-router-dom"; // <-- Tambahkan Link
 
 export default function Dashboard() {
-  const { movies, loading, error, addMovie, updateMovie, deleteMovie } =
-    useContext(MoviesContext);
-  const { isAuthenticated } = useAuth(); // <-- Dapatkan status auth
-  const navigate = useNavigate(); // <-- Dapatkan navigate
+  const {
+    movies,
+    loading,
+    error,
+    addMovie,
+    updateMovie, // Kita mungkin tidak pakai updateMovie langsung di Dashboard lagi
+    deleteMovie, // Kita mungkin tidak pakai deleteMovie langsung di Dashboard lagi
+    favoriteIds,
+    toggleFavorite,
+  } = useContext(MoviesContext);
+
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingMovie, setEditingMovie] = useState(null);
+  // editingMovie tidak digunakan lagi di sini, modal add saja
+  // const [editingMovie, setEditingMovie] = useState(null);
 
-  const handleOpenModal = (movieToEdit = null) => {
-    setEditingMovie(movieToEdit);
+  const handleOpenAddModal = () => {
+    // Ubah nama fungsi
+    // setEditingMovie(null); // Tidak perlu lagi
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setEditingMovie(null);
+    // setEditingMovie(null); // Tidak perlu lagi
   };
 
-  // Fungsi helper untuk cek auth setelah aksi
   const checkAuthAndHandleError = (result) => {
     if (!isAuthenticated) {
-      navigate("/login"); // Jika entah bagaimana jadi tidak auth, redirect
+      navigate("/login");
       return false;
     }
     if (!result.success) {
-      alert(`Error: ${result.error || "Gagal menyimpan data."}`);
-      // Jika error auth terdeteksi oleh context, ia akan logout,
-      // dan ProtectedRoute akan redirect. Di sini kita hanya alert error.
+      alert(`Error: ${result.error || "Gagal memproses data."}`);
       return false;
     }
     return true;
   };
 
-  const handleSaveMovie = async (formData, movieId) => {
-    console.log("Saving Movie:", movieId ? "Update" : "Add", formData);
-    let result;
-    if (movieId) {
-      result = await updateMovie(movieId, formData);
-    } else {
-      result = await addMovie(formData);
-    }
-
+  const handleSaveNewMovie = async (formData) => {
+    // Hanya untuk add movie baru
+    const result = await addMovie(formData);
     if (checkAuthAndHandleError(result)) {
-      handleCloseModal(); // Tutup modal jika sukses
+      handleCloseModal();
     }
   };
 
-  const handleDeleteMovie = async (movieId) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus film ini?")) {
-      const result = await deleteMovie(movieId);
-      checkAuthAndHandleError(result); // Cukup cek dan tampilkan error
-    }
-  };
+  // Filter dan slice film untuk preview
+  const favoriteMoviesPreview = movies
+    .filter((movie) => favoriteIds.has(movie.id))
+    .slice(0, 4);
+  const allMoviesPreview = movies.slice(0, 4);
+
+  if (loading) return <p className="text-center py-10">Loading dashboard...</p>;
+  if (error) return <p className="text-center text-red-500 py-10">{error}</p>;
 
   return (
     <>
-      {/* Navbar sudah ditampilkan oleh ProtectedRoute */}
       <div className="p-4 mt-8 container mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Semua Film</h2>
+        <div className="flex justify-end items-center mb-8">
+          {" "}
+          {/* Pindahkan tombol tambah */}
           <button
-            onClick={() => handleOpenModal()}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded"
+            onClick={handleOpenAddModal}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow-md text-lg"
           >
             + Tambah Film Baru
           </button>
         </div>
 
-        {loading && <p className="text-center">Loading movies...</p>}
-        {error && <p className="text-center text-red-500">{error}</p>}
+        {/* Bagian Favorit */}
+        <section className="mb-12">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-3xl font-bold text-gray-800">
+              Film Favorit Anda
+            </h2>
+            {favoriteMoviesPreview.length > 0 && (
+              <Link
+                to="/favorites"
+                className="text-blue-600 hover:text-blue-800 font-semibold"
+              >
+                Lihat Selengkapnya &rarr;
+              </Link>
+            )}
+          </div>
+          {favoriteMoviesPreview.length > 0 ? (
+            <MovieList
+              movies={favoriteMoviesPreview}
+              // onEdit dan onDelete tidak kita berikan di preview dashboard
+              // toggleFavorite bisa tetap ada
+              favoriteIds={favoriteIds}
+              toggleFavorite={toggleFavorite}
+              showFullActions={false} // Hanya tampilkan tombol favorit
+            />
+          ) : (
+            <p className="text-center text-gray-600 py-4">
+              Anda belum memiliki film favorit.
+            </p>
+          )}
+        </section>
 
-        {!loading && !error && movies.length > 0 && (
-          <MovieList // <-- Periksa apakah MovieList.jsx Anda sudah benar
-            movies={movies}
-            onEdit={handleOpenModal}
-            onDelete={handleDeleteMovie}
-          />
-        )}
-        {!loading && !error && movies.length === 0 && (
-          <p className="text-center text-gray-600">
-            Belum ada film di database.
-          </p>
-        )}
+        {/* Bagian Semua Film / Terbaru */}
+        <section>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-3xl font-bold text-gray-800">Koleksi Film</h2>
+            {allMoviesPreview.length > 0 && (
+              <Link
+                to="/movies"
+                className="text-blue-600 hover:text-blue-800 font-semibold"
+              >
+                Lihat Selengkapnya &rarr;
+              </Link>
+            )}
+          </div>
+          {allMoviesPreview.length > 0 ? (
+            <MovieList
+              movies={allMoviesPreview}
+              // onEdit dan onDelete tidak kita berikan di preview dashboard
+              favoriteIds={favoriteIds}
+              toggleFavorite={toggleFavorite}
+              showFullActions={false} // Hanya tampilkan tombol favorit
+            />
+          ) : (
+            !loading && (
+              <p className="text-center text-gray-600 py-4">
+                Belum ada film di database.
+              </p>
+            )
+          )}
+        </section>
       </div>
 
       {isModalOpen && (
         <Modal onClose={handleCloseModal}>
           <MovieForm
-            onSave={handleSaveMovie}
+            onSave={handleSaveNewMovie} // Gunakan handleSaveNewMovie
             onCancel={handleCloseModal}
-            existingMovie={editingMovie}
+            existingMovie={null} // Selalu null karena ini modal 'Add'
           />
         </Modal>
       )}

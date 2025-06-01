@@ -13,32 +13,30 @@ import Favorites from "./pages/Favorites";
 import { MoviesProvider } from "./context/MovieContext";
 import Profile from "./pages/Profile";
 import ProfileEdit from "./pages/ProfileEdit";
-import ProtectedRoute from "./components/ProtectedRoute"; // <-- Import ProtectedRoute
-// Hapus import Navbar jika tidak digunakan di sini lagi
+import ProtectedRoute from "./components/ProtectedRoute";
+import AllMoviesPage from "./pages/AllMoviesPage"; // <-- Import halaman baru
 
 export default function App() {
   return (
     <MoviesProvider>
-      {" "}
-      {/* MoviesProvider bisa di dalam atau luar AuthProvider, tergantung kebutuhan */}
       <Router>
+        {/* Navbar sekarang dirender di dalam ProtectedRoute */}
         <Routes>
-          {/* Rute Publik: Login, Signup, dan root (yang mengarah ke login) */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
-          {/* Rute Dilindungi: Menggunakan ProtectedRoute */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/movies" element={<AllMoviesPage />} />{" "}
+            {/* <-- Rute Baru */}
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/edit" element={<ProfileEdit />} />
-            {/* Jika ingin root mengarah ke dashboard saat login, tambahkan ini */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>
 
-          {/* Jika ingin root mengarah ke login jika belum login */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Fallback jika tidak ada yang cocok dan tidak login */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
     </MoviesProvider>

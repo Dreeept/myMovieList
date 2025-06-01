@@ -1,57 +1,68 @@
+// filmfy/frontend/src/components/MovieCard.jsx
 import React from "react";
 
 export default function MovieCard({
   movie,
-  onEdit, // Fungsi untuk membuka modal edit
-  onDelete, // Fungsi untuk menghapus
-  // onToggleFavorite, // Kita nonaktifkan dulu
-  showActions = true,
+  onEdit,
+  onDelete,
+  onToggleFavorite,
+  isFavorite,
+  showFullActions = true, // <-- Prop baru, defaultnya true
 }) {
-  // Gunakan poster_url jika ada, jika tidak, gunakan placeholder
   const imageUrl =
     movie.poster_url || "https://placehold.co/300x400?text=No+Image";
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition w-full max-w-xs mx-auto">
-      {" "}
-      {/* Tambah mx-auto */}
+    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition w-full max-w-xs mx-auto text-black">
       <img
-        src={imageUrl} // <-- UBAH KE imageUrl (dari poster_url)
+        src={imageUrl}
         alt={movie.title}
         className="w-full h-60 object-cover"
       />
       <div className="p-4">
-        <h3 className="text-xl font-semibold">{movie.title}</h3>
+        <h3 className="text-xl font-semibold text-gray-900">{movie.title}</h3>
         <p className="text-sm text-gray-600">
-          {/* UBAH KE release_year */}
           {movie.release_year} · {movie.genre}
         </p>
         <p className="mt-1 text-yellow-600 font-bold">⭐ {movie.rating}/10</p>
 
-        {showActions && (
-          <div className="flex justify-between items-center mt-4">
+        {/* Selalu tampilkan tombol favorit jika onToggleFavorite ada */}
+        {onToggleFavorite && (
+          <div
+            className={`flex ${
+              showFullActions ? "justify-between" : "justify-end"
+            } items-center mt-4`}
+          >
+            {showFullActions &&
+              (onEdit || onDelete) && ( // Hanya tampilkan grup edit/delete jika showFullActions true
+                <div>
+                  {onEdit && (
+                    <button
+                      onClick={() => onEdit(movie)}
+                      className="text-blue-600 hover:underline text-sm mr-3"
+                    >
+                      ✏️ Edit
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={() => onDelete(movie.id)}
+                      className="text-red-600 hover:underline text-sm"
+                    >
+                      🗑️ Delete
+                    </button>
+                  )}
+                </div>
+              )}
             <button
-              onClick={() => onEdit(movie)} // Pastikan memanggil onEdit
-              className="text-blue-600 hover:underline text-sm"
-            >
-              ✏️ Edit
-            </button>
-            <button
-              onClick={() => onDelete(movie.id)} // Pastikan memanggil onDelete
-              className="text-red-600 hover:underline text-sm"
-            >
-              🗑️ Delete
-            </button>
-            {/* <button
               onClick={() => onToggleFavorite(movie.id)}
-              className={`text-sm ${
-                movie.isFavorite ? "text-yellow-500" : "text-gray-400"
-              } hover:text-yellow-500`}
-              title="Toggle Favorite"
+              className={`text-2xl transition-transform duration-150 ease-in-out ${
+                isFavorite ? "transform scale-125" : ""
+              }`}
+              title={isFavorite ? "Hapus dari Favorit" : "Tambah ke Favorit"}
             >
-              ⭐
-            </button> 
-            */}
+              {isFavorite ? "❤️" : "🤍"}
+            </button>
           </div>
         )}
       </div>

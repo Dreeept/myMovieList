@@ -6,23 +6,54 @@ import React, {
   useCallback,
   useContext,
 } from "react";
-import axios from "axios"; // <-- Import axios
-import { useAuth } from "./AuthContext"; // <-- Import useAuth untuk logout
-import { useNavigate } from "react-router-dom"; // <-- Import useNavigate
+import axios from "axios";
+import { useAuth } from "./AuthContext";
 
 export const MoviesContext = createContext();
 
-// Hapus API_URL, karena kita sudah set baseURL di axios
-// const API_URL = "http://127.0.0.1:6543/api/movies";
+const FAVORITES_KEY = "filmfy_favorites"; // <-- Kunci untuk localStorage
 
 export function MoviesProvider({ children }) {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { logout } = useAuth(); // <-- Ambil fungsi logout
-  // Tidak bisa pakai useNavigate di sini, kita akan handle di komponen pemanggil
+  const { logout } = useAuth();
 
-  // Fungsi helper untuk menangani error 401/403
+  // --- START: Penambahan State & Logika Favorit ---
+  const [favoriteIds, setFavoriteIds] = useState(() => {
+    try {
+      const storedFavorites = localStorage.getItem(FAVORITES_KEY);
+      return storedFavorites ? new Set(JSON.parse(storedFavorites)) : new Set();
+    } catch (e) {
+      console.error("Failed to load favorites from localStorage", e);
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        FAVORITES_KEY,
+        JSON.stringify(Array.from(favoriteIds))
+      );
+    } catch (e) {
+      console.error("Failed to save favorites to localStorage", e);
+    }
+  }, [favoriteIds]);
+
+  const toggleFavorite = (movieId) => {
+    setFavoriteIds((prevIds) => {
+      const newIds = new Set(prevIds);
+      if (newIds.has(movieId)) {
+        newIds.delete(movieId);
+      } else {
+        newIds.add(movieId);
+      }
+      return newIds;
+    });
+  };
+  // --- END: Penambahan State & Logika Favorit ---
+
   const handleAuthError = useCallback(
     async (err) => {
       if (
@@ -31,10 +62,9 @@ export function MoviesProvider({ children }) {
       ) {
         console.error("Authentication Error - Logging out:", err);
         await logout();
-        // Navigasi akan dilakukan di komponen yang memanggil
-        return true; // Mengindikasikan error auth terjadi
+        return true;
       }
-      return false; // Bukan error auth
+      return false;
     },
     [logout]
   );
@@ -43,7 +73,6 @@ export function MoviesProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
-      // Gunakan axios, cukup pakai path relatif karena baseURL sudah di-set
       const response = await axios.get("/movies");
       setMovies(Array.isArray(response.data) ? response.data : []);
     } catch (e) {
@@ -55,7 +84,7 @@ export function MoviesProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [handleAuthError]); // <-- Tambah dependensi
+  }, [handleAuthError]);
 
   useEffect(() => {
     fetchMovies();
@@ -63,55 +92,56 @@ export function MoviesProvider({ children }) {
 
   const addMovie = async (formData) => {
     try {
-      // Gunakan axios.post
       const response = await axios.post("/movies", formData, {
-        headers: { "Content-Type": "multipart/form-data" }, // axios biasanya handle ini, tapi eksplisit lebih baik
+        // Hapus header Content-Type, biarkan axios menentukannya untuk FormData
       });
       if (response.status === 201) {
-        // <-- Cek status 201 Created
         await fetchMovies();
         return { success: true };
       }
       throw new Error("Failed to add movie (unexpected response).");
     } catch (e) {
       console.error("Failed to add movie:", e);
-      await handleAuthError(e); // <-- Handle auth error
+      await handleAuthError(e);
       return { success: false, error: e.response?.data?.error || e.message };
     }
   };
 
   const updateMovie = async (movieId, formData) => {
     try {
-      // Gunakan axios.post (karena backend pakai POST)
       const response = await axios.post(`/movies/${movieId}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        // Hapus header Content-Type
       });
       if (response.status === 200) {
-        // <-- Cek status 200 OK
         await fetchMovies();
         return { success: true };
       }
       throw new Error("Failed to update movie (unexpected response).");
     } catch (e) {
       console.error("Failed to update movie:", e);
-      await handleAuthError(e); // <-- Handle auth error
+      await handleAuthError(e);
       return { success: false, error: e.response?.data?.error || e.message };
     }
   };
 
   const deleteMovie = async (movieId) => {
     try {
-      // Gunakan axios.delete
       const response = await axios.delete(`/movies/${movieId}`);
       if (response.status === 204) {
-        // <-- Cek status 204 No Content
+        // --- Hapus juga dari favorit jika ada ---
+        setFavoriteIds((prevIds) => {
+          const newIds = new Set(prevIds);
+          newIds.delete(movieId);
+          return newIds;
+        });
+        // --------------------------------------
         await fetchMovies();
         return { success: true };
       }
       throw new Error("Failed to delete movie (unexpected response).");
     } catch (e) {
       console.error("Failed to delete movie:", e);
-      await handleAuthError(e); // <-- Handle auth error
+      await handleAuthError(e);
       return { success: false, error: e.response?.data?.error || e.message };
     }
   };
@@ -125,7 +155,9 @@ export function MoviesProvider({ children }) {
         addMovie,
         updateMovie,
         deleteMovie,
-        fetchMovies, // <-- Export juga fetchMovies jika perlu refresh manual
+        fetchMovies,
+        favoriteIds, // <-- Export favoriteIds
+        toggleFavorite, // <-- Export toggleFavorite
       }}
     >
       {children}
